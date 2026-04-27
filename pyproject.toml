@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurogesture-edge-fl"
+version = "0.1.0"
+description = "Local-first EMG gesture recognition skeleton for wearable-control scenarios."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "numpy",
+    "pandas",
+    "pydantic",
+    "pyyaml",
+    "scikit-learn",
+    "torch",
+    "uvicorn[standard]",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

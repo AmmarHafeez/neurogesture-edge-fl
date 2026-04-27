@@ -1,0 +1,4 @@
+model_type: baseline
+num_channels: 8
+num_classes: null
+checkpoint_dir: models

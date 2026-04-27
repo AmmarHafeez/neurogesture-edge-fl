@@ -1,0 +1,14 @@
+raw_data_dir: data/raw/EMG_data_for_gestures-master
+interim_dir: data/interim
+processed_dir: data/processed
+columns:
+  - time
+  - emg_1
+  - emg_2
+  - emg_3
+  - emg_4
+  - emg_5
+  - emg_6
+  - emg_7
+  - emg_8
+  - label

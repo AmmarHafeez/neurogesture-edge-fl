@@ -1,0 +1,7 @@
+host: 0.0.0.0
+port: 8000
+model_path: models/latest.pt
+command_map:
+  0: rest
+  1: gesture_1
+  2: gesture_2

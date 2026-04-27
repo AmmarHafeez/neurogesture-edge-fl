@@ -1,0 +1,5 @@
+seed: 42
+batch_size: 64
+epochs: 20
+learning_rate: 0.001
+validation_split: subject_aware

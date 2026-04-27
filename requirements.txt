@@ -1,0 +1,9 @@
+fastapi
+numpy
+pandas
+pydantic
+pytest
+pyyaml
+scikit-learn
+torch
+uvicorn[standard]
