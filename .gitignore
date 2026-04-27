@@ -1,6 +1,10 @@
 .venv/
 __pycache__/
 .pytest_cache/
+.pytest_tmp/
+tests/.pytest_tmp/
+tests/pytest_tmp/
+tests/generated/
 pytest-cache-files-*/
 .ruff_cache/
 .env

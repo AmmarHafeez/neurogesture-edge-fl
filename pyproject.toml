@@ -12,6 +12,7 @@ dependencies = [
     "fastapi",
     "numpy",
     "pandas",
+    "pyarrow",
     "pydantic",
     "pyyaml",
     "scikit-learn",
@@ -27,3 +28,5 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+norecursedirs = [".pytest_tmp", "pytest_tmp", "generated", "__pycache__"]
+addopts = ["-p", "no:cacheprovider"]

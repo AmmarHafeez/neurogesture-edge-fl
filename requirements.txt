@@ -1,6 +1,7 @@
 fastapi
 numpy
 pandas
+pyarrow
 pydantic
 pytest
 pyyaml

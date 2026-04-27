@@ -1,6 +1,9 @@
 raw_data_dir: data/raw/EMG_data_for_gestures-master
 interim_dir: data/interim
 processed_dir: data/processed
+processed_samples_path: data/processed/emg_samples.parquet
+summary_path: reports/metrics/dataset_summary.json
+drop_unmarked: true
 columns:
   - time
   - emg_1
@@ -11,4 +14,13 @@ columns:
   - emg_6
   - emg_7
   - emg_8
-  - label
+  - label_id
+gesture_labels:
+  0: unmarked
+  1: rest
+  2: fist
+  3: wrist_flexion
+  4: wrist_extension
+  5: radial_deviation
+  6: ulnar_deviation
+  7: extended_palm
