@@ -2,8 +2,13 @@ raw_data_dir: data/raw/EMG_data_for_gestures-master
 interim_dir: data/interim
 processed_dir: data/processed
 processed_samples_path: data/processed/emg_samples.parquet
+processed_windows_path: data/processed/emg_windows.npz
 summary_path: reports/metrics/dataset_summary.json
+window_summary_path: reports/metrics/window_summary.json
 drop_unmarked: true
+windowing:
+  window_size: 200
+  stride: 100
 columns:
   - time
   - emg_1

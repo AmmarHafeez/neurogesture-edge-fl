@@ -26,6 +26,14 @@ data/raw/EMG_data_for_gestures-master/
 
 The raw dataset contains subject folders and text files. Each raw text file is expected to contain 10 columns: time, 8 EMG sensor channels, and class label.
 
+## Window generation
+
+Parsed EMG samples can be converted into fixed-length model windows after creating `data/processed/emg_samples.parquet`. Windows are grouped by subject, recording, and gesture, sorted by time, and stored as compressed arrays under `data/processed/emg_windows.npz`.
+
+```bash
+python src/data/make_windows.py --input data/processed/emg_samples.parquet --output data/processed/emg_windows.npz --summary reports/metrics/window_summary.json --window-size 200 --stride 100
+```
+
 ## Planned architecture
 
 - Data ingestion for parsing the UCI text files into consistent tabular data.
