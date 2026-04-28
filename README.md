@@ -42,6 +42,8 @@ Classical baseline models can be trained on `data/processed/emg_windows.npz` usi
 python src/training/train_baseline.py --windows data/processed/emg_windows.npz --results reports/metrics/baseline_results.json --figures-dir reports/figures --models-dir models
 ```
 
+A neutral technical summary of the current baseline results is available in [docs/results.md](docs/results.md).
+
 ## Planned architecture
 
 - Data ingestion for parsing the UCI text files into consistent tabular data.
