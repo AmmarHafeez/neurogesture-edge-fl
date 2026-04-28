@@ -1,4 +1,6 @@
 fastapi
+joblib
+matplotlib
 numpy
 pandas
 pyarrow

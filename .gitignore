@@ -11,7 +11,7 @@ pytest-cache-files-*/
 data/raw/
 data/interim/
 data/processed/
-models/
+/models/
 mlruns/
 reports/metrics/
 reports/figures/

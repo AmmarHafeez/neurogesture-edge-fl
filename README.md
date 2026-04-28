@@ -34,6 +34,14 @@ Parsed EMG samples can be converted into fixed-length model windows after creati
 python src/data/make_windows.py --input data/processed/emg_samples.parquet --output data/processed/emg_windows.npz --summary reports/metrics/window_summary.json --window-size 200 --stride 100
 ```
 
+## Baseline evaluation
+
+Classical baseline models can be trained on `data/processed/emg_windows.npz` using flattened EMG windows. The baseline pipeline evaluates logistic regression and random forest models with random and subject-held-out splits, then writes metrics, confusion matrix figures, and a random forest model artifact.
+
+```bash
+python src/training/train_baseline.py --windows data/processed/emg_windows.npz --results reports/metrics/baseline_results.json --figures-dir reports/figures --models-dir models
+```
+
 ## Planned architecture
 
 - Data ingestion for parsing the UCI text files into consistent tabular data.

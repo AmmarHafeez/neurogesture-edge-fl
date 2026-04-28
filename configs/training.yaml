@@ -3,3 +3,12 @@ batch_size: 64
 epochs: 20
 learning_rate: 0.001
 validation_split: subject_aware
+baseline:
+  windows_path: data/processed/emg_windows.npz
+  results_path: reports/metrics/baseline_results.json
+  figures_dir: reports/figures
+  models_dir: models
+  feature_mode: flatten
+  random_state: 42
+  test_size: 0.2
+  subject_test_size: 0.2

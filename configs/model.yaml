@@ -2,3 +2,14 @@ model_type: baseline
 num_channels: 8
 num_classes: null
 checkpoint_dir: models
+classical:
+  models:
+    - logistic_regression
+    - random_forest
+  logistic_regression:
+    class_weight: balanced
+    max_iter: 1000
+  random_forest:
+    n_estimators: 200
+    class_weight: balanced
+    n_jobs: 1
