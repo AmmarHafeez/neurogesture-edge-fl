@@ -50,6 +50,17 @@ This document summarizes the completed local pipeline for the UCI EMG Data for G
 - The `extended_palm` class is highly underrepresented and should be handled carefully in later experiments.
 - Accuracy alone is not sufficient because of class imbalance; macro F1 and balanced accuracy are more informative.
 
+## Personalization Support
+
+A personalized calibration experiment has been added for adapting a global CNN-1D model to held-out target subjects. The experiment samples a small calibration set from each target subject, fine-tunes a copy of the global model, and evaluates on the remaining non-overlapping windows from the same subject.
+
+Supported calibration modes are:
+
+- `last_layer`: freeze the convolutional feature extractor and fine-tune the classifier.
+- `full_model`: fine-tune all model parameters with a smaller learning rate.
+
+No personalization results are listed here until the calibration command is run locally and the output metrics are reviewed.
+
 ## Reproducibility Commands
 
 Parse the raw dataset:
@@ -76,9 +87,15 @@ Run the normalized CNN baseline:
 python src/training/train_deep.py --windows data/processed/emg_windows.npz --results reports/metrics/deep_results.json --models-dir models --model cnn1d --epochs 10 --batch-size 128 --normalization global_channel_zscore
 ```
 
+Run personalized calibration after creating `models/cnn1d_subject_split_best.pt`:
+
+```bash
+python src/personalization/evaluate_calibration.py --windows data/processed/emg_windows.npz --base-model models/cnn1d_subject_split_best.pt --results reports/metrics/personalization_results.json --mode last_layer --calibration-per-class 10 --epochs 5 --batch-size 64
+```
+
 ## Current Limitations
 
-- Personalization has not been added yet.
+- Personalization support has been added, but calibration results are not listed until the experiment is run locally.
 - Federated learning simulation has not been added yet.
 - ONNX and edge export have not been added yet.
 - Subject-split results depend on which subjects are held out.

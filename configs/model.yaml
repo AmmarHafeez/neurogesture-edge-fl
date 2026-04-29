@@ -25,3 +25,8 @@ deep:
   tcn:
     hidden_channels: 64
     dropout: 0.2
+personalization:
+  base_model: cnn1d
+  modes:
+    - last_layer
+    - full_model

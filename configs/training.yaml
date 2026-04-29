@@ -26,3 +26,14 @@ deep:
   use_class_weights: true
   random_state: 42
   test_size: 0.2
+personalization:
+  windows_path: data/processed/emg_windows.npz
+  base_model_path: models/cnn1d_subject_split_best.pt
+  results_path: reports/metrics/personalization_results.json
+  calibration_mode: last_layer
+  calibration_per_class: 10
+  personalization_epochs: 5
+  batch_size: 64
+  learning_rate: 0.0005
+  random_state: 42
+  test_size: 0.2
