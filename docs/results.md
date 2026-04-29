@@ -86,6 +86,12 @@ Key observations:
 - Therefore, INT8 should be treated here as a size-optimization path, not automatically as a latency optimization.
 - FP32 ONNX currently provides the best latency in this local benchmark.
 
+## Federated Learning Simulation
+
+Manual PyTorch FedAvg support has been added for subject-level federated simulation. Each subject is treated as one client, client training runs on that subject's local windows, and the server aggregates only model parameters with sample-weighted FedAvg. The simulation uses the deterministic subject split, computes `global_channel_zscore` normalization from federated training subjects only, and evaluates the global model on held-out subjects after each round.
+
+No federated benchmark metrics are listed here until the simulation command is run locally.
+
 ## Reproducibility Commands
 
 Parse the raw dataset:
@@ -142,9 +148,15 @@ Benchmark ONNX latency:
 python src/edge/benchmark_latency.py --fp32-model models/onnx/cnn1d_fp32.onnx --int8-model models/onnx/cnn1d_int8.onnx --output reports/metrics/edge_benchmark.json --warmup 20 --runs 200
 ```
 
+Run the FedAvg federated simulation:
+
+```bash
+python src/federated/simulate_fedavg.py --windows data/processed/emg_windows.npz --results reports/metrics/federated_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64
+```
+
 ## Current Limitations
 
-- Federated learning simulation has not been added yet.
+- Federated learning simulation is available, but local benchmark results have not been listed here yet.
 - Subject-split results depend on which subjects are held out.
 - The `extended_palm` class has low support.
 - Current CNN results are a baseline, not final optimization.

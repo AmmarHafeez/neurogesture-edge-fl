@@ -38,3 +38,7 @@ edge:
     - 1
     - 8
     - 200
+federated:
+  base_model: cnn1d
+  aggregation: fedavg
+  final_checkpoint_path: models/fedavg_cnn1d_final.pt

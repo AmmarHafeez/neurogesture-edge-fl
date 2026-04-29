@@ -41,3 +41,18 @@ edge:
   benchmark_output: reports/metrics/edge_benchmark.json
   warmup: 20
   runs: 200
+federated:
+  windows_path: data/processed/emg_windows.npz
+  results_path: reports/metrics/federated_results.json
+  models_dir: models
+  model: cnn1d
+  aggregation: fedavg
+  rounds: 5
+  clients_per_round: 8
+  local_epochs: 1
+  batch_size: 64
+  learning_rate: 0.001
+  normalization: global_channel_zscore
+  use_class_weights: true
+  random_state: 42
+  test_size: 0.2
