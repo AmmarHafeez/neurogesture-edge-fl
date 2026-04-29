@@ -78,6 +78,12 @@ The subject split holds out complete subjects so that no subject appears in both
 - Macro F1: 0.6838
 - Balanced accuracy: 0.6843
 
+## Deep-Learning Baseline Support
+
+A lightweight PyTorch deep-learning baseline has been added for windowed EMG classification. The initial supported model is a compact 1D CNN that consumes windows as `(batch, channels, samples)` tensors and reports metrics using the same fixed label order as the classical baseline. A small TCN option is also available for later comparison.
+
+No deep-learning performance values are listed here until the training command is run locally and the resulting metrics are reviewed.
+
 ## Data Note
 
 The `extended_palm` class is highly underrepresented:

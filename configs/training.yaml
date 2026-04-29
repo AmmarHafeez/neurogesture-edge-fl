@@ -12,3 +12,17 @@ baseline:
   random_state: 42
   test_size: 0.2
   subject_test_size: 0.2
+deep:
+  windows_path: data/processed/emg_windows.npz
+  results_path: reports/metrics/deep_results.json
+  models_dir: models
+  model: cnn1d
+  epochs: 10
+  batch_size: 128
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  max_grad_norm: 5.0
+  normalization: global_channel_zscore
+  use_class_weights: true
+  random_state: 42
+  test_size: 0.2
