@@ -67,11 +67,24 @@ Key observations:
 - Full-model calibration can adapt more strongly but may require more care to avoid overfitting.
 - `extended_palm` remains difficult because it has low support and is absent for some target-subject evaluation sets.
 
-## Edge Deployment Support
+## Edge Deployment Benchmark
 
-An edge-deployment workflow has been added for exporting the trained CNN-1D checkpoint to ONNX FP32, applying dynamic INT8 quantization when ONNX Runtime supports it, and benchmarking inference latency with ONNX Runtime. Exported ONNX models, benchmark JSON files, and checkpoints are generated locally and kept out of Git.
+The trained CNN-1D checkpoint can be exported to ONNX FP32, quantized with ONNX Runtime dynamic INT8 quantization, and benchmarked on CPU. Generated ONNX models and benchmark JSON files are intentionally kept out of Git and can be reproduced locally.
 
-No edge latency or model-size results are listed here until the export, quantization, and benchmark commands are run locally.
+| Model format | Size KB | Mean latency ms | Median latency ms | P95 latency ms | Throughput windows/sec | Runtime provider |
+|---|---:|---:|---:|---:|---:|---|
+| ONNX FP32 | 149.52 | 0.149 | 0.144 | 0.203 | 6706.50 | CPUExecutionProvider |
+| ONNX INT8 | 45.32 | 2.087 | 1.842 | 3.362 | 479.16 | CPUExecutionProvider |
+
+Key observations:
+
+- The FP32 ONNX model is already very small at about 149.52 KB.
+- Dynamic INT8 quantization reduced model size to about 45.32 KB.
+- This is roughly a 70% model-size reduction.
+- In this CPU benchmark, INT8 was slower than FP32.
+- This can happen for small convolutional models because quantization overhead and CPU operator support can outweigh speed gains.
+- Therefore, INT8 should be treated here as a size-optimization path, not automatically as a latency optimization.
+- FP32 ONNX currently provides the best latency in this local benchmark.
 
 ## Reproducibility Commands
 
@@ -132,7 +145,6 @@ python src/edge/benchmark_latency.py --fp32-model models/onnx/cnn1d_fp32.onnx --
 ## Current Limitations
 
 - Federated learning simulation has not been added yet.
-- Edge export and latency benchmarking are supported, but benchmark results are not listed until run locally.
 - Subject-split results depend on which subjects are held out.
 - The `extended_palm` class has low support.
 - Current CNN results are a baseline, not final optimization.
