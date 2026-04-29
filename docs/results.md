@@ -67,6 +67,12 @@ Key observations:
 - Full-model calibration can adapt more strongly but may require more care to avoid overfitting.
 - `extended_palm` remains difficult because it has low support and is absent for some target-subject evaluation sets.
 
+## Edge Deployment Support
+
+An edge-deployment workflow has been added for exporting the trained CNN-1D checkpoint to ONNX FP32, applying dynamic INT8 quantization when ONNX Runtime supports it, and benchmarking inference latency with ONNX Runtime. Exported ONNX models, benchmark JSON files, and checkpoints are generated locally and kept out of Git.
+
+No edge latency or model-size results are listed here until the export, quantization, and benchmark commands are run locally.
+
 ## Reproducibility Commands
 
 Parse the raw dataset:
@@ -105,10 +111,28 @@ Run full-model personalized calibration:
 python src/personalization/evaluate_calibration.py --windows data/processed/emg_windows.npz --base-model models/cnn1d_subject_split_best.pt --results reports/metrics/personalization_results_full_model.json --mode full_model --calibration-per-class 10 --epochs 5 --batch-size 64
 ```
 
+Export the CNN checkpoint to ONNX FP32:
+
+```bash
+python src/edge/export_onnx.py --checkpoint models/cnn1d_subject_split_best.pt --output models/onnx/cnn1d_fp32.onnx --windows data/processed/emg_windows.npz
+```
+
+Quantize the ONNX model to INT8:
+
+```bash
+python src/edge/quantize_onnx.py --input models/onnx/cnn1d_fp32.onnx --output models/onnx/cnn1d_int8.onnx
+```
+
+Benchmark ONNX latency:
+
+```bash
+python src/edge/benchmark_latency.py --fp32-model models/onnx/cnn1d_fp32.onnx --int8-model models/onnx/cnn1d_int8.onnx --output reports/metrics/edge_benchmark.json --warmup 20 --runs 200
+```
+
 ## Current Limitations
 
 - Federated learning simulation has not been added yet.
-- ONNX and edge export have not been added yet.
+- Edge export and latency benchmarking are supported, but benchmark results are not listed until run locally.
 - Subject-split results depend on which subjects are held out.
 - The `extended_palm` class has low support.
 - Current CNN results are a baseline, not final optimization.

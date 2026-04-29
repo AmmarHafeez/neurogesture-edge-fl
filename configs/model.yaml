@@ -30,3 +30,11 @@ personalization:
   modes:
     - last_layer
     - full_model
+edge:
+  checkpoint_path: models/cnn1d_subject_split_best.pt
+  fp32_onnx_path: models/onnx/cnn1d_fp32.onnx
+  int8_onnx_path: models/onnx/cnn1d_int8.onnx
+  input_shape:
+    - 1
+    - 8
+    - 200

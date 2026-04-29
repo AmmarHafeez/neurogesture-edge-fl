@@ -2,6 +2,8 @@ fastapi
 joblib
 matplotlib
 numpy
+onnx
+onnxruntime
 pandas
 pyarrow
 pydantic
