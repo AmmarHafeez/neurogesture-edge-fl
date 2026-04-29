@@ -44,6 +44,10 @@ python src/training/train_baseline.py --windows data/processed/emg_windows.npz -
 
 A neutral technical summary of the current baseline results is available in [docs/results.md](docs/results.md).
 
+## Current results
+
+The current pipeline includes UCI parsing, sliding-window generation, classical baselines, and a normalized CNN-1D baseline. Current model comparison tables and reproducibility commands are documented in [docs/results.md](docs/results.md).
+
 ## Planned architecture
 
 - Data ingestion for parsing the UCI text files into consistent tabular data.
