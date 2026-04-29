@@ -50,16 +50,22 @@ This document summarizes the completed local pipeline for the UCI EMG Data for G
 - The `extended_palm` class is highly underrepresented and should be handled carefully in later experiments.
 - Accuracy alone is not sufficient because of class imbalance; macro F1 and balanced accuracy are more informative.
 
-## Personalization Support
+## Personalized Calibration
 
-A personalized calibration experiment has been added for adapting a global CNN-1D model to held-out target subjects. The experiment samples a small calibration set from each target subject, fine-tunes a copy of the global model, and evaluates on the remaining non-overlapping windows from the same subject.
+Personalized calibration adapts the CNN-1D subject-split checkpoint to held-out target subjects. The experiment uses `global_channel_zscore` normalization, samples up to 10 windows per class from each held-out subject, and evaluates on the remaining windows from the same subject. Calibration and evaluation windows do not overlap.
 
-Supported calibration modes are:
+| Calibration mode | Subjects evaluated | Subjects skipped | Mean before macro F1 | Mean after macro F1 | Mean delta macro F1 | Mean before balanced accuracy | Mean after balanced accuracy | Mean delta balanced accuracy |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Last layer | 8 | 0 | 0.7335 | 0.7704 | +0.0369 | 0.7326 | 0.7666 | +0.0340 |
+| Full model | 8 | 0 | 0.7335 | 0.7764 | +0.0430 | 0.7326 | 0.7795 | +0.0469 |
 
-- `last_layer`: freeze the convolutional feature extractor and fine-tune the classifier.
-- `full_model`: fine-tune all model parameters with a smaller learning rate.
+Key observations:
 
-No personalization results are listed here until the calibration command is run locally and the output metrics are reviewed.
+- Personalized calibration improved mean macro F1 for both modes.
+- Full-model fine-tuning produced the larger mean macro-F1 gain in the current run.
+- Last-layer calibration is lighter because fewer parameters are updated.
+- Full-model calibration can adapt more strongly but may require more care to avoid overfitting.
+- `extended_palm` remains difficult because it has low support and is absent for some target-subject evaluation sets.
 
 ## Reproducibility Commands
 
@@ -93,9 +99,14 @@ Run personalized calibration after creating `models/cnn1d_subject_split_best.pt`
 python src/personalization/evaluate_calibration.py --windows data/processed/emg_windows.npz --base-model models/cnn1d_subject_split_best.pt --results reports/metrics/personalization_results.json --mode last_layer --calibration-per-class 10 --epochs 5 --batch-size 64
 ```
 
+Run full-model personalized calibration:
+
+```bash
+python src/personalization/evaluate_calibration.py --windows data/processed/emg_windows.npz --base-model models/cnn1d_subject_split_best.pt --results reports/metrics/personalization_results_full_model.json --mode full_model --calibration-per-class 10 --epochs 5 --batch-size 64
+```
+
 ## Current Limitations
 
-- Personalization support has been added, but calibration results are not listed until the experiment is run locally.
 - Federated learning simulation has not been added yet.
 - ONNX and edge export have not been added yet.
 - Subject-split results depend on which subjects are held out.
