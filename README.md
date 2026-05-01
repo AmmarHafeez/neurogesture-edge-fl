@@ -1,16 +1,59 @@
 # neurogesture-edge-fl
 
-## Overview
+`neurogesture-edge-fl` is a local-first Python project for EMG gesture recognition in wearable-control scenarios. It provides a reproducible pipeline for parsing the UCI EMG Data for Gestures dataset, building fixed-length EMG windows, evaluating centralized and subject-aware models, testing personalization, exporting edge-ready ONNX models, and simulating subject-level federated learning.
 
-`neurogesture-edge-fl` is a local-first Python project for EMG gesture recognition in wearable-control scenarios. The repository is structured for iterative development of subject-aware evaluation, personalization, privacy-preserving federated learning simulation, and edge-ready inference.
+## What It Does
 
-The first version contains only the project skeleton, configuration files, starter modules, and smoke tests. Full machine learning pipelines are intentionally left for later iterations.
+- Parses raw UCI EMG text files into validated sample tables.
+- Converts continuous EMG streams into fixed-length sliding windows.
+- Trains classical baselines and a compact CNN-1D model.
+- Evaluates random splits, held-out subject splits, and limited calibration experiments.
+- Exports CNN checkpoints to ONNX, applies INT8 quantization, and benchmarks CPU latency.
+- Simulates FedAvg and FedProx with one subject per client and sample-weighted parameter aggregation.
 
-## Background
+## Pipeline
 
-Surface electromyography (EMG) captures muscle activation patterns through sensor channels placed on the skin. Gesture recognition systems can use EMG windows to infer intended hand or arm actions for wearable interfaces, assistive control, and embedded interaction.
+Raw EMG files -> parsed samples -> sliding windows -> baselines -> CNN -> personalization -> ONNX/edge -> federated simulation.
 
-This project is organized around practical constraints that matter for EMG systems: variation across subjects, limited calibration data, privacy-sensitive signals, and deployment on constrained local devices.
+```mermaid
+flowchart LR
+    A["Raw UCI EMG files"] --> B["Parsed samples"]
+    B --> C["Sliding windows"]
+    C --> D["Classical baselines"]
+    C --> E["CNN-1D training"]
+    E --> F["Personalized calibration"]
+    E --> G["ONNX export and benchmark"]
+    C --> H["FedAvg and FedProx simulation"]
+    D --> I["Evaluation reports"]
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+```
+
+## Key Capabilities
+
+- UCI EMG parser for subject folders and raw text recordings.
+- Sliding-window generation with subject, recording, and gesture metadata.
+- Classical baseline evaluation with logistic regression and random forest.
+- CNN-1D training with `global_channel_zscore` normalization.
+- Personalized calibration for held-out subjects.
+- ONNX FP32 export, ONNX Runtime INT8 quantization, and latency benchmarking.
+- FedAvg and FedProx simulations with subject-local clients.
+
+## Current Results
+
+| Item | Metric | Value |
+|---|---|---:|
+| Random Forest, random split | Macro F1 | 0.6960 |
+| CNN-1D, random split | Macro F1 | 0.8724 |
+| CNN-1D, subject split | Macro F1 | 0.7377 |
+| Personalized calibration, full model | Mean delta macro F1 | +0.0430 |
+| ONNX FP32 | Mean latency | 0.149 ms |
+| FedAvg | Macro F1 | 0.4360 |
+| FedProx | Macro F1 | 0.4359 |
+
+Detailed results and experiment notes are in [docs/results.md](docs/results.md).
 
 ## Dataset
 
@@ -24,52 +67,7 @@ Place the raw dataset under:
 data/raw/EMG_data_for_gestures-master/
 ```
 
-The raw dataset contains subject folders and text files. Each raw text file is expected to contain 10 columns: time, 8 EMG sensor channels, and class label.
-
-## Window generation
-
-Parsed EMG samples can be converted into fixed-length model windows after creating `data/processed/emg_samples.parquet`. Windows are grouped by subject, recording, and gesture, sorted by time, and stored as compressed arrays under `data/processed/emg_windows.npz`.
-
-```bash
-python src/data/make_windows.py --input data/processed/emg_samples.parquet --output data/processed/emg_windows.npz --summary reports/metrics/window_summary.json --window-size 200 --stride 100
-```
-
-## Baseline evaluation
-
-Classical baseline models can be trained on `data/processed/emg_windows.npz` using flattened EMG windows. The baseline pipeline evaluates logistic regression and random forest models with random and subject-held-out splits, then writes metrics, confusion matrix figures, and a random forest model artifact.
-
-```bash
-python src/training/train_baseline.py --windows data/processed/emg_windows.npz --results reports/metrics/baseline_results.json --figures-dir reports/figures --models-dir models
-```
-
-A neutral technical summary of the current baseline results is available in [docs/results.md](docs/results.md).
-
-## Current results
-
-The current pipeline includes UCI parsing, sliding-window generation, classical baselines, a normalized CNN-1D baseline, personalized calibration, manual PyTorch FedAvg and FedProx simulations, ONNX export, INT8 quantization, and CPU latency benchmarking. Current model comparison tables, personalization results, federated simulation results, edge benchmark results, and reproducibility commands are documented in [docs/results.md](docs/results.md). Generated FL reports, ONNX files, benchmark reports, model checkpoints, and datasets are reproducible locally and intentionally kept out of Git.
-
-## Planned architecture
-
-- Data ingestion for parsing the UCI text files into consistent tabular data.
-- Preprocessing for windowing, normalization, and starter feature extraction.
-- Baseline models using classical machine learning methods.
-- Deep learning models for 1D CNN and TCN experiments.
-- Subject-aware evaluation splits and reports.
-- Personalization workflows for adapting models to individual users.
-- Federated learning simulation for privacy-preserving local training experiments.
-- Edge inference utilities and a FastAPI service for local control integration.
-
-## Project structure
-
-```text
-configs/       Configuration files for data, models, training, and API settings.
-data/          Local raw, interim, and processed datasets.
-demo/          Small scripts for local demonstrations.
-docs/          Project notes and design documentation.
-reports/       Generated figures, metrics, and model cards.
-src/           Source package for data, preprocessing, models, training, evaluation, API, and utilities.
-tests/         Pytest smoke tests for starter preprocessing utilities.
-```
+Each raw text file is expected to contain 10 columns: time, 8 EMG sensor channels, and class label.
 
 ## Quickstart
 
@@ -88,35 +86,48 @@ Run tests:
 pytest
 ```
 
-Start the local API:
+Build the processed dataset and windows:
 
 ```bash
-uvicorn src.api.main:app --reload
+python src/data/make_dataset.py --raw-dir data/raw/EMG_data_for_gestures-master --output data/processed/emg_samples.parquet --summary reports/metrics/dataset_summary.json
+python src/data/make_windows.py --input data/processed/emg_samples.parquet --output data/processed/emg_windows.npz --summary reports/metrics/window_summary.json --window-size 200 --stride 100
 ```
 
-With Docker:
+Train and evaluate models:
 
 ```bash
-docker compose up --build
+python src/training/train_baseline.py --windows data/processed/emg_windows.npz --results reports/metrics/baseline_results.json --figures-dir reports/figures --models-dir models
+python src/training/train_deep.py --windows data/processed/emg_windows.npz --results reports/metrics/deep_results.json --models-dir models --model cnn1d --epochs 10 --batch-size 128 --normalization global_channel_zscore
+python src/personalization/evaluate_calibration.py --windows data/processed/emg_windows.npz --base-model models/cnn1d_subject_split_best.pt --results reports/metrics/personalization_results.json --mode last_layer --calibration-per-class 10 --epochs 5 --batch-size 64
 ```
 
-## Roadmap
+Export and benchmark ONNX:
 
-- Add robust parsing for all UCI subject files.
-- Build reproducible processed datasets with metadata.
-- Add subject-aware train, validation, and test split utilities.
-- Implement baseline feature models with scikit-learn.
-- Add PyTorch 1D CNN and TCN training loops.
-- Add personalization experiments with limited subject calibration data.
-- Add federated learning simulation across subject partitions.
-- Add edge export and local inference benchmarks.
+```bash
+python src/edge/export_onnx.py --checkpoint models/cnn1d_subject_split_best.pt --output models/onnx/cnn1d_fp32.onnx --windows data/processed/emg_windows.npz
+python src/edge/quantize_onnx.py --input models/onnx/cnn1d_fp32.onnx --output models/onnx/cnn1d_int8.onnx
+python src/edge/benchmark_latency.py --fp32-model models/onnx/cnn1d_fp32.onnx --int8-model models/onnx/cnn1d_int8.onnx --output reports/metrics/edge_benchmark.json --warmup 20 --runs 200
+```
 
-## Limitations
+Run federated simulations:
 
-- The current repository is a skeleton and does not include complete training logic.
-- Raw data is not included and must be placed locally.
-- API predictions are placeholders until trained model loading is implemented.
-- Edge deployment targets and performance budgets are not defined yet.
+```bash
+python src/federated/simulate_fedavg.py --windows data/processed/emg_windows.npz --results reports/metrics/federated_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64
+python src/federated/simulate_fedprox.py --windows data/processed/emg_windows.npz --results reports/metrics/fedprox_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64 --mu 0.01
+```
+
+More detailed reproduction steps are in [docs/reproducibility.md](docs/reproducibility.md). The module layout is summarized in [docs/architecture.md](docs/architecture.md).
+
+## Data and Artifact Policy
+
+Raw data, processed data, generated reports, figures, model checkpoints, ONNX files, and benchmark JSON files are intentionally ignored by Git. They can be reproduced locally from the commands above.
+
+## Current Limitations
+
+- `extended_palm` is underrepresented.
+- Federated results are baseline experiments, not optimized federated learning methods.
+- ONNX INT8 reduces model size but is slower than FP32 in the local CPU benchmark.
+- No real device integration has been added yet.
 
 ## Citation
 
