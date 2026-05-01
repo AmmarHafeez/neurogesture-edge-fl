@@ -128,11 +128,13 @@ python src/edge/benchmark_latency.py `
 python src/federated/simulate_fedavg.py `
   --windows data/processed/emg_windows.npz `
   --results reports/metrics/federated_results.json `
-  --rounds 5 `
+  --rounds 50 `
   --clients-per-round 8 `
-  --local-epochs 1 `
+  --local-epochs 2 `
   --batch-size 64
 ```
+
+Repeat with `--random-state 42`, `--random-state 123`, and `--random-state 2025` for the reported seed-stability benchmark.
 
 ## FedProx
 
@@ -140,12 +142,14 @@ python src/federated/simulate_fedavg.py `
 python src/federated/simulate_fedprox.py `
   --windows data/processed/emg_windows.npz `
   --results reports/metrics/fedprox_results.json `
-  --rounds 5 `
+  --rounds 50 `
   --clients-per-round 8 `
-  --local-epochs 1 `
+  --local-epochs 2 `
   --batch-size 64 `
-  --mu 0.01
+  --mu 0.001
 ```
+
+Repeat with `--random-state 42`, `--random-state 123`, and `--random-state 2025` for the reported seed-stability benchmark.
 
 ## Troubleshooting
 

@@ -50,10 +50,11 @@ flowchart LR
 | CNN-1D, subject split | Macro F1 | 0.7377 |
 | Personalized calibration, full model | Mean delta macro F1 | +0.0430 |
 | ONNX FP32 | Mean latency | 0.149 ms |
-| FedAvg | Macro F1 | 0.4360 |
-| FedProx | Macro F1 | 0.4359 |
+| FedAvg, 50-round seed benchmark | Mean best macro F1 | 0.7357 |
+| FedProx, 50-round seed benchmark | Mean best macro F1 | 0.7355 |
 
 Detailed results and experiment notes are in [docs/results.md](docs/results.md).
+The federated values are 50-round seed-stability benchmark means across seeds 42, 123, and 2025.
 
 ## Dataset
 
@@ -156,19 +157,19 @@ Run federated simulations:
 python src/federated/simulate_fedavg.py `
   --windows data/processed/emg_windows.npz `
   --results reports/metrics/federated_results.json `
-  --rounds 5 `
+  --rounds 50 `
   --clients-per-round 8 `
-  --local-epochs 1 `
+  --local-epochs 2 `
   --batch-size 64
 
 python src/federated/simulate_fedprox.py `
   --windows data/processed/emg_windows.npz `
   --results reports/metrics/fedprox_results.json `
-  --rounds 5 `
+  --rounds 50 `
   --clients-per-round 8 `
-  --local-epochs 1 `
+  --local-epochs 2 `
   --batch-size 64 `
-  --mu 0.01
+  --mu 0.001
 ```
 
 More detailed reproduction steps are in [docs/reproducibility.md](docs/reproducibility.md). The module layout is summarized in [docs/architecture.md](docs/architecture.md).

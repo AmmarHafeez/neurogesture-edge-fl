@@ -88,23 +88,41 @@ Key observations:
 
 ## Federated learning simulation
 
-Manual PyTorch federated simulation has been added for subject-level FedAvg and FedProx experiments. Each subject is treated as one simulated client. The current setup uses 28 training clients and 8 held-out subjects, with raw client data kept local inside each simulated client. The server aggregates model parameters only.
+Manual PyTorch federated simulation has been added for subject-level FedAvg and FedProx experiments. Each subject is treated as one simulated client. The final benchmark uses 28 training clients and 8 held-out subjects, with raw client data kept local inside each simulated client. The server aggregates model parameters only.
 
-Both runs use CNN-1D, `global_channel_zscore` normalization computed from federated training subjects, sample-weighted parameter aggregation, 5 rounds, 8 clients per round, 1 local epoch, batch size 64, and learning rate 0.001.
+The final benchmark uses CNN-1D, `global_channel_zscore` normalization computed from federated training subjects, sample-weighted parameter aggregation, 50 rounds, 8 clients per round, 2 local epochs, batch size 64, and seeds 42, 123, and 2025. Earlier 5-round runs were smoke baselines and are no longer the main reported federated-learning result.
 
-| Method | Rounds | Clients per round | Local epochs | Clients | Held-out subjects | Macro F1 | Balanced accuracy | Best round |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| FedAvg CNN-1D | 5 | 8 | 1 | 28 | 8 | 0.4360 | 0.4394 | 5 |
-| FedProx CNN-1D, mu=0.01 | 5 | 8 | 1 | 28 | 8 | 0.4359 | 0.4394 | 5 |
+FedAvg seed results:
+
+| Seed | Final macro F1 | Final balanced accuracy | Best macro F1 | Best balanced accuracy | Best round |
+|---:|---:|---:|---:|---:|---:|
+| 42 | 0.7008 | 0.7023 | 0.7353 | 0.7356 | 45 |
+| 123 | 0.7123 | 0.7174 | 0.7306 | 0.7348 | 45 |
+| 2025 | 0.7354 | 0.7426 | 0.7411 | 0.7499 | 28 |
+
+FedProx seed results:
+
+| Seed | Mu | Final macro F1 | Final balanced accuracy | Best macro F1 | Best balanced accuracy | Best round |
+|---:|---:|---:|---:|---:|---:|---:|
+| 42 | 0.001 | 0.6991 | 0.7008 | 0.7369 | 0.7373 | 45 |
+| 123 | 0.001 | 0.7116 | 0.7166 | 0.7285 | 0.7326 | 45 |
+| 2025 | 0.001 | 0.7353 | 0.7425 | 0.7410 | 0.7507 | 49 |
+
+Aggregate summary:
+
+| Method | Seeds | Mean final macro F1 | Mean best macro F1 | Best macro F1 range | Mean best balanced accuracy |
+|---|---:|---:|---:|---:|---:|
+| FedAvg CNN-1D | 3 | 0.7162 | 0.7357 | 0.7306–0.7411 | 0.7401 |
+| FedProx CNN-1D, mu=0.001 | 3 | 0.7153 | 0.7355 | 0.7285–0.7410 | 0.7402 |
 
 Key observations:
 
-- FedAvg and FedProx produced nearly identical results in this short baseline run.
-- FedProx did not materially improve performance with `mu=0.01` under the current settings.
-- The result should not be interpreted as FedProx being generally ineffective; it only reflects this configuration.
-- More rounds, different `mu` values, more local epochs, different client sampling, and personalization after federated learning may change the result.
-- The federated results remain lower than the centralized CNN baseline, which is expected for a short, privacy-preserving simulation with heterogeneous subject clients.
-- This section documents a reproducible federated-learning baseline rather than a fully optimized federated-learning system.
+- Increasing the federated benchmark to 50 rounds substantially improved performance relative to the earlier smoke baselines.
+- FedAvg and FedProx were effectively tied under the best tested configuration.
+- The best observed federated-learning performance is close to the centralized CNN subject-split result.
+- Final-round metrics are lower than best-round metrics for some seeds, so early stopping or checkpoint selection is useful.
+- Generated federated JSON reports are reproducible locally and intentionally kept out of Git.
+- This section documents a reproducible federated-learning benchmark rather than a fully optimized federated-learning system.
 - `extended_palm` remains difficult because of low support and missing labels in some held-out subject sets.
 
 ## Reproducibility Commands
@@ -166,18 +184,18 @@ python src/edge/benchmark_latency.py --fp32-model models/onnx/cnn1d_fp32.onnx --
 Run the FedAvg federated simulation:
 
 ```bash
-python src/federated/simulate_fedavg.py --windows data/processed/emg_windows.npz --results reports/metrics/federated_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64
+python src/federated/simulate_fedavg.py --windows data/processed/emg_windows.npz --results reports/metrics/federated_results.json --rounds 50 --clients-per-round 8 --local-epochs 2 --batch-size 64
 ```
 
 Run the FedProx federated simulation:
 
 ```bash
-python src/federated/simulate_fedprox.py --windows data/processed/emg_windows.npz --results reports/metrics/fedprox_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64 --mu 0.01
+python src/federated/simulate_fedprox.py --windows data/processed/emg_windows.npz --results reports/metrics/fedprox_results.json --rounds 50 --clients-per-round 8 --local-epochs 2 --batch-size 64 --mu 0.001
 ```
 
 ## Current Limitations
 
-- Federated learning simulation is available, but the current FedAvg and FedProx results are first baselines rather than optimized federated methods.
+- Federated learning simulation is available, but the current FedAvg and FedProx results are benchmark baselines rather than optimized federated methods.
 - Subject-split results depend on which subjects are held out.
 - The `extended_palm` class has low support.
 - Current CNN results are a baseline, not final optimization.
