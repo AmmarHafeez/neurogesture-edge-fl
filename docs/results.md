@@ -88,28 +88,24 @@ Key observations:
 
 ## Federated learning simulation
 
-Manual PyTorch FedAvg support has been added for subject-level federated simulation. Each subject is treated as one simulated client. The current run uses 28 training clients and 8 held-out subjects, with raw client data kept local inside each simulated client. The server aggregates model parameters only.
+Manual PyTorch federated simulation has been added for subject-level FedAvg and FedProx experiments. Each subject is treated as one simulated client. The current setup uses 28 training clients and 8 held-out subjects, with raw client data kept local inside each simulated client. The server aggregates model parameters only.
 
-The experiment uses CNN-1D, `global_channel_zscore` normalization computed from federated training subjects, sample-weighted FedAvg, 5 rounds, 8 clients per round, 1 local epoch, batch size 64, and learning rate 0.001.
+Both runs use CNN-1D, `global_channel_zscore` normalization computed from federated training subjects, sample-weighted parameter aggregation, 5 rounds, 8 clients per round, 1 local epoch, batch size 64, and learning rate 0.001.
 
 | Method | Rounds | Clients per round | Local epochs | Clients | Held-out subjects | Macro F1 | Balanced accuracy | Best round |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | FedAvg CNN-1D | 5 | 8 | 1 | 28 | 8 | 0.4360 | 0.4394 | 5 |
+| FedProx CNN-1D, mu=0.01 | 5 | 8 | 1 | 28 | 8 | 0.4359 | 0.4394 | 5 |
 
 Key observations:
 
-- The FedAvg simulation demonstrates subject-local training with server-side parameter aggregation.
-- The first FedAvg baseline is lower than the centralized CNN baseline.
-- This is expected because the current setup uses few rounds, partial client participation, one local epoch, and a simple FedAvg strategy.
-- The result should be treated as a privacy-preserving baseline, not an optimized federated method.
-- Future improvements can include more rounds, client sampling strategies, personalization after federated learning, FedProx tuning, SCAFFOLD-style control variates, and better handling of subject heterogeneity.
+- FedAvg and FedProx produced nearly identical results in this short baseline run.
+- FedProx did not materially improve performance with `mu=0.01` under the current settings.
+- The result should not be interpreted as FedProx being generally ineffective; it only reflects this configuration.
+- More rounds, different `mu` values, more local epochs, different client sampling, and personalization after federated learning may change the result.
+- The federated results remain lower than the centralized CNN baseline, which is expected for a short, privacy-preserving simulation with heterogeneous subject clients.
+- This section documents a reproducible federated-learning baseline rather than a fully optimized federated-learning system.
 - `extended_palm` remains difficult because of low support and missing labels in some held-out subject sets.
-
-## FedProx comparison support
-
-FedProx simulation support has been added as a second federated method. It uses the same subject split, CNN-1D model, `global_channel_zscore` normalization, fixed-label metrics, client sampling, and sample-weighted parameter aggregation as FedAvg. During local client training, FedProx adds a proximal term against the round's initial global parameters to reduce excessive client drift under subject heterogeneity.
-
-No FedProx benchmark metrics are listed here until the FedProx command is run locally.
 
 ## Reproducibility Commands
 
@@ -181,8 +177,7 @@ python src/federated/simulate_fedprox.py --windows data/processed/emg_windows.np
 
 ## Current Limitations
 
-- Federated learning simulation is available, but the current FedAvg result is a first baseline rather than an optimized federated method.
-- FedProx comparison support is available, but FedProx benchmark results have not been listed here yet.
+- Federated learning simulation is available, but the current FedAvg and FedProx results are first baselines rather than optimized federated methods.
 - Subject-split results depend on which subjects are held out.
 - The `extended_palm` class has low support.
 - Current CNN results are a baseline, not final optimization.
