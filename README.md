@@ -73,47 +73,102 @@ Each raw text file is expected to contain 10 columns: time, 8 EMG sensor channel
 
 Create and activate a Python 3.12 environment:
 
-```bash
+```powershell
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
 Run tests:
 
-```bash
+```powershell
 pytest
 ```
 
 Build the processed dataset and windows:
 
-```bash
-python src/data/make_dataset.py --raw-dir data/raw/EMG_data_for_gestures-master --output data/processed/emg_samples.parquet --summary reports/metrics/dataset_summary.json
-python src/data/make_windows.py --input data/processed/emg_samples.parquet --output data/processed/emg_windows.npz --summary reports/metrics/window_summary.json --window-size 200 --stride 100
+```powershell
+python src/data/make_dataset.py `
+  --raw-dir data/raw/EMG_data_for_gestures-master `
+  --output data/processed/emg_samples.parquet `
+  --summary reports/metrics/dataset_summary.json
+
+python src/data/make_windows.py `
+  --input data/processed/emg_samples.parquet `
+  --output data/processed/emg_windows.npz `
+  --summary reports/metrics/window_summary.json `
+  --window-size 200 `
+  --stride 100
 ```
 
 Train and evaluate models:
 
-```bash
-python src/training/train_baseline.py --windows data/processed/emg_windows.npz --results reports/metrics/baseline_results.json --figures-dir reports/figures --models-dir models
-python src/training/train_deep.py --windows data/processed/emg_windows.npz --results reports/metrics/deep_results.json --models-dir models --model cnn1d --epochs 10 --batch-size 128 --normalization global_channel_zscore
-python src/personalization/evaluate_calibration.py --windows data/processed/emg_windows.npz --base-model models/cnn1d_subject_split_best.pt --results reports/metrics/personalization_results.json --mode last_layer --calibration-per-class 10 --epochs 5 --batch-size 64
+```powershell
+python src/training/train_baseline.py `
+  --windows data/processed/emg_windows.npz `
+  --results reports/metrics/baseline_results.json `
+  --figures-dir reports/figures `
+  --models-dir models
+
+python src/training/train_deep.py `
+  --windows data/processed/emg_windows.npz `
+  --results reports/metrics/deep_results.json `
+  --models-dir models `
+  --model cnn1d `
+  --epochs 10 `
+  --batch-size 128 `
+  --normalization global_channel_zscore
+
+python src/personalization/evaluate_calibration.py `
+  --windows data/processed/emg_windows.npz `
+  --base-model models/cnn1d_subject_split_best.pt `
+  --results reports/metrics/personalization_results.json `
+  --mode last_layer `
+  --calibration-per-class 10 `
+  --epochs 5 `
+  --batch-size 64
 ```
 
 Export and benchmark ONNX:
 
-```bash
-python src/edge/export_onnx.py --checkpoint models/cnn1d_subject_split_best.pt --output models/onnx/cnn1d_fp32.onnx --windows data/processed/emg_windows.npz
-python src/edge/quantize_onnx.py --input models/onnx/cnn1d_fp32.onnx --output models/onnx/cnn1d_int8.onnx
-python src/edge/benchmark_latency.py --fp32-model models/onnx/cnn1d_fp32.onnx --int8-model models/onnx/cnn1d_int8.onnx --output reports/metrics/edge_benchmark.json --warmup 20 --runs 200
+```powershell
+python src/edge/export_onnx.py `
+  --checkpoint models/cnn1d_subject_split_best.pt `
+  --output models/onnx/cnn1d_fp32.onnx `
+  --windows data/processed/emg_windows.npz
+
+python src/edge/quantize_onnx.py `
+  --input models/onnx/cnn1d_fp32.onnx `
+  --output models/onnx/cnn1d_int8.onnx
+
+python src/edge/benchmark_latency.py `
+  --fp32-model models/onnx/cnn1d_fp32.onnx `
+  --int8-model models/onnx/cnn1d_int8.onnx `
+  --output reports/metrics/edge_benchmark.json `
+  --warmup 20 `
+  --runs 200
 ```
 
 Run federated simulations:
 
-```bash
-python src/federated/simulate_fedavg.py --windows data/processed/emg_windows.npz --results reports/metrics/federated_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64
-python src/federated/simulate_fedprox.py --windows data/processed/emg_windows.npz --results reports/metrics/fedprox_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64 --mu 0.01
+```powershell
+python src/federated/simulate_fedavg.py `
+  --windows data/processed/emg_windows.npz `
+  --results reports/metrics/federated_results.json `
+  --rounds 5 `
+  --clients-per-round 8 `
+  --local-epochs 1 `
+  --batch-size 64
+
+python src/federated/simulate_fedprox.py `
+  --windows data/processed/emg_windows.npz `
+  --results reports/metrics/fedprox_results.json `
+  --rounds 5 `
+  --clients-per-round 8 `
+  --local-epochs 1 `
+  --batch-size 64 `
+  --mu 0.01
 ```
 
 More detailed reproduction steps are in [docs/reproducibility.md](docs/reproducibility.md). The module layout is summarized in [docs/architecture.md](docs/architecture.md).
@@ -127,7 +182,7 @@ Raw data, processed data, generated reports, figures, model checkpoints, ONNX fi
 - `extended_palm` is underrepresented.
 - Federated results are baseline experiments, not optimized federated learning methods.
 - ONNX INT8 reduces model size but is slower than FP32 in the local CPU benchmark.
-- No real device integration has been added yet.
+- Real-device integration is future work.
 
 ## Citation
 
