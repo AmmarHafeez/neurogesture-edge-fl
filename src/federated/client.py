@@ -11,7 +11,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from src.training.train_deep import EMGWindowDataset, train_one_epoch
+from src.training.train_deep import EMGWindowDataset
 
 
 LOGGER = logging.getLogger(__name__)
@@ -62,15 +62,19 @@ class FederatedClient:
         random_state: int = 42,
         weight_decay: float = 1e-4,
         max_grad_norm: float = 5.0,
+        fedprox_mu: float = 0.0,
     ) -> ClientUpdate:
         """Train a private local copy of the global model."""
         if local_epochs <= 0:
             raise ValueError("local_epochs must be positive")
         if batch_size <= 0:
             raise ValueError("batch_size must be positive")
+        if fedprox_mu < 0:
+            raise ValueError("fedprox_mu must be non-negative")
 
         torch.manual_seed(random_state)
         model = deepcopy(global_model).to(device)
+        global_parameters = snapshot_model_parameters(model, device=device)
         dataset = EMGWindowDataset(self.X, self.y)
         generator = torch.Generator()
         generator.manual_seed(random_state)
@@ -89,13 +93,15 @@ class FederatedClient:
         losses = []
         for _ in range(local_epochs):
             losses.append(
-                train_one_epoch(
+                train_one_epoch_local(
                     model=model,
                     dataloader=dataloader,
                     criterion=criterion,
                     optimizer=optimizer,
                     device=device,
                     max_grad_norm=max_grad_norm,
+                    fedprox_mu=fedprox_mu,
+                    global_parameters=global_parameters,
                 )
             )
 
@@ -116,6 +122,84 @@ class FederatedClient:
             num_samples=self.num_samples,
             mean_loss=mean_loss,
         )
+
+
+def snapshot_model_parameters(
+    model: nn.Module,
+    device: torch.device | None = None,
+) -> dict[str, torch.Tensor]:
+    """Copy model parameters for use as the FedProx reference point."""
+    snapshot: dict[str, torch.Tensor] = {}
+    for name, parameter in model.named_parameters():
+        value = parameter.detach().clone()
+        if device is not None:
+            value = value.to(device)
+        snapshot[name] = value
+    return snapshot
+
+
+def fedprox_proximal_penalty(
+    model: nn.Module,
+    global_parameters: dict[str, torch.Tensor],
+) -> torch.Tensor:
+    """Return sum of squared distances from the round's global parameters."""
+    try:
+        first_parameter = next(model.parameters())
+    except StopIteration as error:
+        raise ValueError("Model has no parameters") from error
+
+    penalty = torch.zeros((), device=first_parameter.device)
+    for name, parameter in model.named_parameters():
+        if name not in global_parameters:
+            raise KeyError(f"Missing global parameter for FedProx: {name}")
+        reference = global_parameters[name].to(device=parameter.device)
+        penalty = penalty + torch.sum((parameter - reference) ** 2)
+    return penalty
+
+
+def train_one_epoch_local(
+    model: nn.Module,
+    dataloader: DataLoader,
+    criterion: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+    max_grad_norm: float = 5.0,
+    fedprox_mu: float = 0.0,
+    global_parameters: dict[str, torch.Tensor] | None = None,
+) -> float:
+    """Train one local epoch, optionally adding FedProx regularization."""
+    if fedprox_mu < 0:
+        raise ValueError("fedprox_mu must be non-negative")
+    if fedprox_mu > 0 and global_parameters is None:
+        raise ValueError("global_parameters are required when fedprox_mu > 0")
+
+    model.train()
+    total_loss = 0.0
+    total_samples = 0
+    for windows, labels in dataloader:
+        windows = windows.to(device)
+        labels = labels.to(device)
+
+        optimizer.zero_grad()
+        logits = model(windows)
+        loss = criterion(logits, labels)
+        if fedprox_mu > 0:
+            loss = loss + (fedprox_mu / 2.0) * fedprox_proximal_penalty(
+                model,
+                global_parameters=global_parameters or {},
+            )
+        loss.backward()
+        if max_grad_norm > 0:
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_grad_norm)
+        optimizer.step()
+
+        batch_size = len(labels)
+        total_loss += float(loss.item()) * batch_size
+        total_samples += batch_size
+
+    if total_samples == 0:
+        raise ValueError("Training dataloader is empty")
+    return total_loss / total_samples
 
 
 def build_subject_clients(

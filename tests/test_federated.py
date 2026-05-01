@@ -7,8 +7,15 @@ import torch
 from torch import nn
 
 from src.federated.aggregation import fedavg_state_dict
-from src.federated.client import FederatedClient, build_subject_clients
-from src.federated.simulate_fedavg import run_simulation, select_clients
+from src.federated.client import (
+    FederatedClient,
+    build_subject_clients,
+    fedprox_proximal_penalty,
+    snapshot_model_parameters,
+)
+from src.federated.simulate_fedavg import run_simulation as run_fedavg_simulation
+from src.federated.simulate_fedavg import select_clients
+from src.federated.simulate_fedprox import run_simulation as run_fedprox_simulation
 from src.models.cnn1d import CNN1D
 
 
@@ -136,6 +143,49 @@ def test_one_local_client_training_step_runs() -> None:
     assert set(update.state_dict) == set(model.state_dict())
 
 
+def test_fedprox_penalty_is_zero_for_identical_parameters() -> None:
+    model = nn.Linear(2, 1)
+    global_parameters = snapshot_model_parameters(model)
+
+    penalty = fedprox_proximal_penalty(model, global_parameters)
+
+    assert penalty.item() == 0.0
+
+
+def test_fedprox_penalty_is_positive_when_parameters_differ() -> None:
+    model = nn.Linear(2, 1)
+    global_parameters = snapshot_model_parameters(model)
+    with torch.no_grad():
+        model.weight.add_(1.0)
+
+    penalty = fedprox_proximal_penalty(model, global_parameters)
+
+    assert penalty.item() > 0.0
+
+
+def test_one_local_fedprox_training_step_runs() -> None:
+    X = np.random.default_rng(42).normal(size=(14, 24, 8)).astype(np.float32)
+    y = np.asarray([1, 2, 3, 4, 5, 6, 7] * 2, dtype=np.int64)
+    client = FederatedClient(subject_id="1", X=X, y=y)
+    model = CNN1D(input_channels=8, num_classes=7)
+    criterion = nn.CrossEntropyLoss()
+
+    update = client.train(
+        global_model=model,
+        criterion=criterion,
+        local_epochs=1,
+        batch_size=7,
+        learning_rate=1e-3,
+        device=torch.device("cpu"),
+        random_state=42,
+        fedprox_mu=0.01,
+    )
+
+    assert update.subject_id == "1"
+    assert update.num_samples == 14
+    assert update.mean_loss > 0
+
+
 def test_federated_simulation_smoke_run_writes_results() -> None:
     workspace = _test_workspace()
     try:
@@ -146,7 +196,7 @@ def test_federated_simulation_smoke_run_writes_results() -> None:
         windows_path.parent.mkdir(parents=True)
         np.savez_compressed(windows_path, **data)
 
-        report = run_simulation(
+        report = run_fedavg_simulation(
             windows_path=windows_path,
             results_path=results_path,
             models_dir=models_dir,
@@ -167,5 +217,41 @@ def test_federated_simulation_smoke_run_writes_results() -> None:
         assert "final_macro_f1" in report
         assert "final_balanced_accuracy" in report
         assert report["number_of_clients"] == 3
+    finally:
+        shutil.rmtree(workspace, ignore_errors=True)
+
+
+def test_fedprox_simulation_smoke_run_writes_results() -> None:
+    workspace = _test_workspace()
+    try:
+        data = _synthetic_federated_data(subjects=4, repeats_per_label=2)
+        windows_path = workspace / "data" / "processed" / "emg_windows.npz"
+        results_path = workspace / "reports" / "metrics" / "fedprox_results.json"
+        models_dir = workspace / "models"
+        windows_path.parent.mkdir(parents=True)
+        np.savez_compressed(windows_path, **data)
+
+        report = run_fedprox_simulation(
+            windows_path=windows_path,
+            results_path=results_path,
+            models_dir=models_dir,
+            rounds=1,
+            clients_per_round=2,
+            local_epochs=1,
+            batch_size=7,
+            learning_rate=1e-3,
+            mu=0.01,
+            random_state=42,
+            device_name="cpu",
+        )
+
+        assert results_path.exists()
+        assert report["experiment"] == "federated_fedprox"
+        assert report["aggregation"] == "fedprox"
+        assert report["fedprox_mu"] == 0.01
+        assert len(report["round_history"]) == 1
+        assert "evaluation_metrics" in report["round_history"][0]
+        assert "final_macro_f1" in report
+        assert "final_balanced_accuracy" in report
     finally:
         shutil.rmtree(workspace, ignore_errors=True)

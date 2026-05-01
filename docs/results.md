@@ -102,8 +102,14 @@ Key observations:
 - The first FedAvg baseline is lower than the centralized CNN baseline.
 - This is expected because the current setup uses few rounds, partial client participation, one local epoch, and a simple FedAvg strategy.
 - The result should be treated as a privacy-preserving baseline, not an optimized federated method.
-- Future improvements can include more rounds, client sampling strategies, personalization after federated learning, FedProx, SCAFFOLD-style control variates, and better handling of subject heterogeneity.
+- Future improvements can include more rounds, client sampling strategies, personalization after federated learning, FedProx tuning, SCAFFOLD-style control variates, and better handling of subject heterogeneity.
 - `extended_palm` remains difficult because of low support and missing labels in some held-out subject sets.
+
+## FedProx comparison support
+
+FedProx simulation support has been added as a second federated method. It uses the same subject split, CNN-1D model, `global_channel_zscore` normalization, fixed-label metrics, client sampling, and sample-weighted parameter aggregation as FedAvg. During local client training, FedProx adds a proximal term against the round's initial global parameters to reduce excessive client drift under subject heterogeneity.
+
+No FedProx benchmark metrics are listed here until the FedProx command is run locally.
 
 ## Reproducibility Commands
 
@@ -167,9 +173,16 @@ Run the FedAvg federated simulation:
 python src/federated/simulate_fedavg.py --windows data/processed/emg_windows.npz --results reports/metrics/federated_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64
 ```
 
+Run the FedProx federated simulation:
+
+```bash
+python src/federated/simulate_fedprox.py --windows data/processed/emg_windows.npz --results reports/metrics/fedprox_results.json --rounds 5 --clients-per-round 8 --local-epochs 1 --batch-size 64 --mu 0.01
+```
+
 ## Current Limitations
 
 - Federated learning simulation is available, but the current FedAvg result is a first baseline rather than an optimized federated method.
+- FedProx comparison support is available, but FedProx benchmark results have not been listed here yet.
 - Subject-split results depend on which subjects are held out.
 - The `extended_palm` class has low support.
 - Current CNN results are a baseline, not final optimization.

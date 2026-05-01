@@ -44,14 +44,19 @@ edge:
 federated:
   windows_path: data/processed/emg_windows.npz
   results_path: reports/metrics/federated_results.json
+  fedprox_results_path: reports/metrics/fedprox_results.json
   models_dir: models
   model: cnn1d
   aggregation: fedavg
+  supported_aggregations:
+    - fedavg
+    - fedprox
   rounds: 5
   clients_per_round: 8
   local_epochs: 1
   batch_size: 64
   learning_rate: 0.001
+  fedprox_mu: 0.01
   normalization: global_channel_zscore
   use_class_weights: true
   random_state: 42

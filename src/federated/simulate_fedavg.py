@@ -107,6 +107,7 @@ def train_selected_clients(
     round_number: int,
     weight_decay: float,
     max_grad_norm: float,
+    fedprox_mu: float = 0.0,
 ) -> list[ClientUpdate]:
     """Train selected clients from the current global model."""
     updates: list[ClientUpdate] = []
@@ -122,12 +123,13 @@ def train_selected_clients(
             random_state=random_state + round_number * 10_000 + offset,
             weight_decay=weight_decay,
             max_grad_norm=max_grad_norm,
+            fedprox_mu=fedprox_mu,
         )
         updates.append(update)
     return updates
 
 
-def run_fedavg_simulation(
+def run_federated_simulation(
     X: np.ndarray,
     y: np.ndarray,
     subject_ids: np.ndarray,
@@ -145,8 +147,14 @@ def run_fedavg_simulation(
     max_grad_norm: float = 5.0,
     models_dir: str | Path | None = DEFAULT_MODELS_DIR,
     save_final_checkpoint: bool = True,
+    aggregation: str = "fedavg",
+    fedprox_mu: float = 0.0,
 ) -> dict[str, object]:
-    """Run manual FedAvg where each subject is one simulated client."""
+    """Run a manual federated simulation where each subject is one client."""
+    if aggregation not in {"fedavg", "fedprox"}:
+        raise ValueError("aggregation must be 'fedavg' or 'fedprox'")
+    if fedprox_mu < 0:
+        raise ValueError("fedprox_mu must be non-negative")
     if rounds <= 0:
         raise ValueError("rounds must be positive")
     if local_epochs <= 0:
@@ -221,6 +229,7 @@ def run_fedavg_simulation(
             round_number=round_number,
             weight_decay=weight_decay,
             max_grad_norm=max_grad_norm,
+            fedprox_mu=fedprox_mu if aggregation == "fedprox" else 0.0,
         )
         aggregated_state = fedavg_state_dict(
             [(update.state_dict, update.num_samples) for update in updates]
@@ -266,7 +275,7 @@ def run_fedavg_simulation(
     if save_final_checkpoint and models_dir is not None:
         output_dir = Path(models_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        checkpoint_path = output_dir / "fedavg_cnn1d_final.pt"
+        checkpoint_path = output_dir / f"{aggregation}_{model_name}_final.pt"
         torch.save(
             {
                 "model_name": model_name,
@@ -275,15 +284,16 @@ def run_fedavg_simulation(
                 "gesture_mapping": GESTURE_MAPPING,
                 "input_channels": int(values.shape[2]),
                 "normalization": normalization_metadata,
-                "aggregation": "fedavg",
+                "aggregation": aggregation,
+                "fedprox_mu": fedprox_mu if aggregation == "fedprox" else 0.0,
                 "rounds": rounds,
             },
             checkpoint_path,
         )
 
     report: dict[str, object] = {
-        "experiment": "federated_fedavg",
-        "aggregation": "fedavg",
+        "experiment": f"federated_{aggregation}",
+        "aggregation": aggregation,
         "model_name": model_name,
         "device": str(device),
         "rounds": rounds,
@@ -310,9 +320,54 @@ def run_fedavg_simulation(
         "best_macro_f1": best_macro_f1,
         "best_balanced_accuracy": best_balanced_accuracy,
     }
+    if aggregation == "fedprox":
+        report["fedprox_mu"] = fedprox_mu
     if checkpoint_path is not None:
         report["final_checkpoint_path"] = str(checkpoint_path)
     return report
+
+
+def run_fedavg_simulation(
+    X: np.ndarray,
+    y: np.ndarray,
+    subject_ids: np.ndarray,
+    rounds: int = 5,
+    clients_per_round: int = 8,
+    local_epochs: int = 1,
+    batch_size: int = 64,
+    learning_rate: float = 1e-3,
+    random_state: int = 42,
+    model_name: str = "cnn1d",
+    test_size: float = 0.2,
+    use_class_weights: bool = True,
+    device_name: str | None = None,
+    weight_decay: float = 1e-4,
+    max_grad_norm: float = 5.0,
+    models_dir: str | Path | None = DEFAULT_MODELS_DIR,
+    save_final_checkpoint: bool = True,
+) -> dict[str, object]:
+    """Run manual FedAvg where each subject is one simulated client."""
+    return run_federated_simulation(
+        X=X,
+        y=y,
+        subject_ids=subject_ids,
+        rounds=rounds,
+        clients_per_round=clients_per_round,
+        local_epochs=local_epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        random_state=random_state,
+        model_name=model_name,
+        test_size=test_size,
+        use_class_weights=use_class_weights,
+        device_name=device_name,
+        weight_decay=weight_decay,
+        max_grad_norm=max_grad_norm,
+        models_dir=models_dir,
+        save_final_checkpoint=save_final_checkpoint,
+        aggregation="fedavg",
+        fedprox_mu=0.0,
+    )
 
 
 def run_simulation(
