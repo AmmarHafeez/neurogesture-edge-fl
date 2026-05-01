@@ -86,11 +86,24 @@ Key observations:
 - Therefore, INT8 should be treated here as a size-optimization path, not automatically as a latency optimization.
 - FP32 ONNX currently provides the best latency in this local benchmark.
 
-## Federated Learning Simulation
+## Federated learning simulation
 
-Manual PyTorch FedAvg support has been added for subject-level federated simulation. Each subject is treated as one client, client training runs on that subject's local windows, and the server aggregates only model parameters with sample-weighted FedAvg. The simulation uses the deterministic subject split, computes `global_channel_zscore` normalization from federated training subjects only, and evaluates the global model on held-out subjects after each round.
+Manual PyTorch FedAvg support has been added for subject-level federated simulation. Each subject is treated as one simulated client. The current run uses 28 training clients and 8 held-out subjects, with raw client data kept local inside each simulated client. The server aggregates model parameters only.
 
-No federated benchmark metrics are listed here until the simulation command is run locally.
+The experiment uses CNN-1D, `global_channel_zscore` normalization computed from federated training subjects, sample-weighted FedAvg, 5 rounds, 8 clients per round, 1 local epoch, batch size 64, and learning rate 0.001.
+
+| Method | Rounds | Clients per round | Local epochs | Clients | Held-out subjects | Macro F1 | Balanced accuracy | Best round |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| FedAvg CNN-1D | 5 | 8 | 1 | 28 | 8 | 0.4360 | 0.4394 | 5 |
+
+Key observations:
+
+- The FedAvg simulation demonstrates subject-local training with server-side parameter aggregation.
+- The first FedAvg baseline is lower than the centralized CNN baseline.
+- This is expected because the current setup uses few rounds, partial client participation, one local epoch, and a simple FedAvg strategy.
+- The result should be treated as a privacy-preserving baseline, not an optimized federated method.
+- Future improvements can include more rounds, client sampling strategies, personalization after federated learning, FedProx, SCAFFOLD-style control variates, and better handling of subject heterogeneity.
+- `extended_palm` remains difficult because of low support and missing labels in some held-out subject sets.
 
 ## Reproducibility Commands
 
@@ -156,7 +169,7 @@ python src/federated/simulate_fedavg.py --windows data/processed/emg_windows.npz
 
 ## Current Limitations
 
-- Federated learning simulation is available, but local benchmark results have not been listed here yet.
+- Federated learning simulation is available, but the current FedAvg result is a first baseline rather than an optimized federated method.
 - Subject-split results depend on which subjects are held out.
 - The `extended_palm` class has low support.
 - Current CNN results are a baseline, not final optimization.

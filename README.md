@@ -46,7 +46,7 @@ A neutral technical summary of the current baseline results is available in [doc
 
 ## Current results
 
-The current pipeline includes UCI parsing, sliding-window generation, classical baselines, a normalized CNN-1D baseline, personalized calibration, ONNX export, INT8 quantization, and CPU latency benchmarking. Current model comparison tables, personalization results, edge benchmark results, and reproducibility commands are documented in [docs/results.md](docs/results.md). Generated ONNX files, benchmark reports, model checkpoints, and datasets are reproducible locally and intentionally kept out of Git.
+The current pipeline includes UCI parsing, sliding-window generation, classical baselines, a normalized CNN-1D baseline, personalized calibration, manual PyTorch FedAvg simulation, ONNX export, INT8 quantization, and CPU latency benchmarking. Current model comparison tables, personalization results, federated simulation results, edge benchmark results, and reproducibility commands are documented in [docs/results.md](docs/results.md). Generated federated reports, ONNX files, benchmark reports, model checkpoints, and datasets are reproducible locally and intentionally kept out of Git.
 
 ## Planned architecture
 
